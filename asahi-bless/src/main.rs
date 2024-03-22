@@ -134,21 +134,23 @@ fn list_boot_volumes(args: &Args) -> Result<Vec<BootCandidate>> {
 }
 
 fn set_boot_volume_by_ref(cand: &BootCandidate, args: &Args, interactive: bool) -> Result<()> {
-    if !interactive {
-        println!("Will set volume {} as boot target", get_vg_name(&cand.volumes));
+    println!(
+        r#""{}" will be used by default when starting up your computer."#,
+        get_vg_name(&cand.volumes)
+    );
+
+    // only prompt if non-interactive
+    if interactive || args.autoconfirm || confirm() {
+        set_boot_volume(cand, args.next)
+    } else {
+        eprintln!("Leaving unchanged.");
+        Ok(())
     }
-    if !args.autoconfirm && !interactive {
-        if !confirm() {
-            return Ok(());
-        }
-    }
-    set_boot_volume(cand, args.next)?;
-    Ok(())
 }
 
 fn interactive_main(args: &Args) -> Result<()> {
     let cands = list_boot_volumes(args)?;
-    println!("\nEnter a number to select a boot volume:");
+    println!("\nSelect a startup disk (or press enter to leave unchanged)");
 
     let mut input = String::new();
     let index = loop {
