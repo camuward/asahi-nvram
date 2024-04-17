@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #![allow(dead_code)]
-use asahi_bless::{get_boot_candidates, get_boot_volume, set_boot_volume, BootCandidate, Error, Volume};
+use asahi_bless::{
+    get_boot_candidates, get_boot_volume, set_boot_volume, BootCandidate, Error, Volume,
+};
 use clap::Parser;
 use std::{
     io::{stdin, stdout, Write},
@@ -9,18 +11,16 @@ use std::{
 };
 
 #[cfg(target_os = "macos")]
-compile_error!("asahi-bless will only work on linux, if you are on macos, use system `bless` instead");
+compile_error!(
+    "asahi-bless will only work on linux, if you are on macos, use system `bless` instead"
+);
 
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Parser)]
 #[command(version)]
 struct Args {
-    #[arg(
-        short,
-        long,
-        help = "Set boot volume for next boot only"
-    )]
+    #[arg(short, long, help = "Set boot volume for next boot only")]
     next: bool,
 
     #[arg(
@@ -51,9 +51,18 @@ fn error_to_string(e: Error) -> String {
         Error::OutOfRange => "Index out of range".to_string(),
         Error::Parse => "Unable to parse current nvram contents".to_string(),
         Error::SectionTooBig => "Ran out of space on nvram".to_string(),
-        Error::ApplyError(e) => format!("Failed to save new nvram contents, try running with sudo? Inner error: {:?}", e),
-        Error::NvramReadError(e) => format!("Failed to read nvram contents, try running with sudo? Inner error: {:?}", e),
-        Error::DiskReadError(e) => format!("Failed to collect boot candidates, try running with sudo? Inner error: {:?}", e)
+        Error::ApplyError(e) => format!(
+            "Failed to save new nvram contents, try running with sudo? Inner error: {:?}",
+            e
+        ),
+        Error::NvramReadError(e) => format!(
+            "Failed to read nvram contents, try running with sudo? Inner error: {:?}",
+            e
+        ),
+        Error::DiskReadError(e) => format!(
+            "Failed to collect boot candidates, try running with sudo? Inner error: {:?}",
+            e
+        ),
     }
 }
 
@@ -135,8 +144,9 @@ fn list_boot_volumes(args: &Args) -> Result<Vec<BootCandidate>> {
 
 fn set_boot_volume_by_ref(cand: &BootCandidate, args: &Args, interactive: bool) -> Result<()> {
     println!(
-        r#""{}" will be used by default when starting up your computer."#,
-        get_vg_name(&cand.volumes)
+        r#""{cand}" will be used {next_time} to start up your computer."#,
+        cand = get_vg_name(&cand.volumes),
+        next_time = if args.next { "next time" } else { "by default" }
     );
 
     // only prompt if non-interactive
@@ -165,7 +175,7 @@ fn interactive_main(args: &Args) -> Result<()> {
             Err(e) if e.kind() == &IntErrorKind::Empty => {
                 eprintln!("No volume selected. Leaving unchanged.");
                 return Ok(());
-            },
+            }
             _ => eprintln!("Enter a number from 1 to {}", cands.len()),
         }
     };
